@@ -592,13 +592,13 @@
       <button id="savePoint" class="btn teal" style="width:100%;font-size:1.05rem"><span id="savePointLabel">このポイントを記録</span></button>
     </div>
 
-    <div class="section-title">見逃したポイント</div>
+    <div id="quickPointTitle" class="section-title">見逃したポイント</div>
     <div class="button-grid">
       <button id="missedOurBtn" class="btn ok">自ペアがポイント</button>
       <button id="missedOppBtn" class="btn danger">相手ペアがポイント</button>
     </div>
-    <div class="small" style="margin-top:7px">
-      スコアと採点票には反映しますが、サーブ・決定打・ミス・展開などの分析には含めません。
+    <div id="quickPointNote" class="small" style="margin-top:7px">
+      スコアとスコアシートには反映しますが、サーブ・決定打・ミス・展開などの分析には含めません。
     </div>
   </section>
 
@@ -764,14 +764,14 @@
   </section>
 
   <section class="card">
-    <h2>試合の保存・採点票</h2>
+    <h2>試合の保存・出力</h2>
     <div class="button-grid cols-3">
       <button id="finishMatchBtn" class="btn ok">試合終了・保存</button>
-      <button id="scoreSheetBtn" class="btn primary">採点票を表示</button>
+      <button id="csvBtn" class="btn primary">CSV出力</button>
       <button id="newMatchBtn" class="btn outline">新しい試合</button>
     </div>
     <div class="notice" style="margin-top:12px">
-      採点票を表示後、パソコンでは印刷画面からPDF保存、iPhoneでは共有／プリント画面からPDFとして保存できます。
+      CSVには、ポイント履歴・選手情報・サーブ種類などを出力します。
     </div>
 
     <div class="section-title">試合後コメント</div>
@@ -795,7 +795,7 @@
 
   <section class="card">
     <h2>集計定義</h2>
-    <div class="small" style="margin-bottom:8px">選択した5・7・9ゲームマッチの形式は、今後のゲーム管理と採点票出力に使用します。</div>
+    <div class="small" style="margin-bottom:8px">選択した5・7・9ゲームマッチの形式は、今後のゲーム管理とスコアシート出力に使用します。</div>
     <div class="small">
       1stサーブ成功率＝1st成功数 ÷ サーブ試行数。<br>
       1st成功時ポイント獲得率＝その選手の1st成功ポイントのうち、その選手側ペアが得点した割合。<br>
@@ -815,14 +815,14 @@
 <div class="footer-actions">
   <button id="undoBtn" class="btn warn">直前ポイント取消</button>
   <button id="openPointEditor" class="btn outline">任意のポイントを修正</button>
-  <button id="csvBtn" class="btn primary">CSV出力</button>
+  <button id="scoreSheetBtn" class="btn primary">スコアシートを表示</button>
   <button id="resetBtn" class="btn danger">全削除</button>
 </div>
 
 <script>
 document.getElementById("jsWarning").style.display="none";
-const STORAGE_KEY="softtennis_stats_v39";
-const OLD_KEY="softtennis_stats_v38";
+const STORAGE_KEY="softtennis_stats_v42";
+const OLD_KEY="softtennis_stats_v41";
 
 const finishLabels={
   stroke_winner:"ストロークポイント",serve_winner:"サーブポイント",receive_winner:"レシーブポイント",twist_winner:"ツイストポイント",double_fault_finish:"ダブルフォルト",volley_winner:"ボレーポイント",poach_volley_winner:"ポーチボレーポイント",
@@ -1378,6 +1378,16 @@ function applyInputMode(){
     const modes=(el.dataset.mode||"").split(/\s+/).filter(Boolean);
     el.style.display=modes.includes(mode)?"":"none";
   });
+
+  const title=document.getElementById("quickPointTitle");
+  const note=document.getElementById("quickPointNote");
+  if(mode==="score"){
+    title.textContent="ポイントを取ったペア";
+    note.textContent="ポイントを取ったペアを押すだけで、スコアと採点票へ記録します。プレー内容の詳細分析には含めません。";
+  }else{
+    title.textContent="見逃したポイント";
+    note.textContent="スコアとスコアシートには反映しますが、サーブ・決定打・ミス・展開などの分析には含めません。";
+  }
 }
 function renderFocusBox(){
   const auto=autoOrderSelection();
@@ -1892,28 +1902,54 @@ document.getElementById("newMatchBtn").onclick=()=>{
   state.points=[];state.editIndex=null;cancelEdit();save();render();
 };
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function scoreSheetPointSequence(points,side){
+  return points.map(p=>{
+    const sideIsServing=teamOf(p.serverPlayer)===side;
+    const colorClass=sideIsServing?"serve-color":"receive-color";
+    const mark=p.winnerTeam===side?"○":"×";
+    return `<span class="${colorClass}">${mark}</span>`;
+  }).join(" ");
+}
+function scoreSheetSrDisplay(points,side,finalGame){
+  if(!points.length)return "";
+  if(!finalGame){
+    const isServing=teamOf(points[0].serverPlayer)===side;
+    return `<span class="${isServing?"serve-color":"receive-color"}">${isServing?"S":"R"}</span>`;
+  }
+
+  const groups=[];
+  points.forEach((p,index)=>{
+    const isServing=teamOf(p.serverPlayer)===side;
+    const label=isServing?"S":"R";
+    if(index%2===0 || !groups.length || groups[groups.length-1].label!==label){
+      groups.push({label,isServing});
+    }
+  });
+  return groups.map(g=>
+    `<span class="${g.isServing?"serve-color":"receive-color"}">${g.label}</span>`
+  ).join(" ");
+}
+
 function buildScoreSheet(){
   readMeta();rebuildScore();
   const games=gameSummaries();
   const s=rebuildScore();
   const rows=games.map(g=>{
-    const ourSR = g.points.length && teamOf(g.points[0].serverPlayer)==="our" ? "S" : "R";
-    const oppSR = ourSR==="S" ? "R" : "S";
-    const ourSeq = g.points.map(p=>p.winnerTeam==="our"?"○":"×").join(" ");
-    const oppSeq = g.points.map(p=>p.winnerTeam==="opponent"?"○":"×").join(" ");
+    const ourSrDisplay=scoreSheetSrDisplay(g.points,"our",g.finalGame);
+    const oppSrDisplay=scoreSheetSrDisplay(g.points,"opponent",g.finalGame);
+    const ourSeq=scoreSheetPointSequence(g.points,"our");
+    const oppSeq=scoreSheetPointSequence(g.points,"opponent");
     const last = g.points.length ? g.points[g.points.length-1].scoreAfter : {our:0,opponent:0};
     const ourGet = g.winner==="our" ? "○" : "";
     const oppGet = g.winner==="opponent" ? "○" : "";
-    const ourColorClass=ourSR==="S"?"serve-color":"receive-color";
-    const oppColorClass=oppSR==="S"?"serve-color":"receive-color";
     return `<tr>
       <td>${g.number}${g.finalGame?"F":""}</td>
-      <td class="${ourColorClass}">${ourSR}</td>
-      <td class="${ourColorClass}" style="text-align:left;letter-spacing:2px">${escapeHtml(ourSeq)}</td>
+      <td class="sr-sequence">${ourSrDisplay}</td>
+      <td class="point-sequence" style="text-align:left;letter-spacing:2px">${ourSeq}</td>
       <td>${ourGet}</td>
       <td><strong>${last.our}－${last.opponent}</strong></td>
-      <td class="${oppColorClass}">${oppSR}</td>
-      <td class="${oppColorClass}" style="text-align:left;letter-spacing:2px">${escapeHtml(oppSeq)}</td>
+      <td class="sr-sequence">${oppSrDisplay}</td>
+      <td class="point-sequence" style="text-align:left;letter-spacing:2px">${oppSeq}</td>
       <td>${oppGet}</td>
     </tr>`;
   }).join("");
@@ -1934,6 +1970,8 @@ function buildScoreSheet(){
   .legend{font-size:12px}
   .serve-color{color:#1565c0;font-weight:800}
   .receive-color{color:#d32f2f;font-weight:800}
+  .point-sequence span,.sr-sequence span{display:inline-block}
+  .sr-sequence{white-space:normal;line-height:1.45}
   .serve-legend{color:#1565c0;font-weight:800}
   .receive-legend{color:#d32f2f;font-weight:800}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -2005,6 +2043,7 @@ function buildScoreSheet(){
   </table>
 
   <table class="footer"><tr><th style="text-align:left">良かった点</th><td style="text-align:left">${escapeHtml(state.meta.commentGood||"")}</td></tr><tr><th style="text-align:left">改善点</th><td style="text-align:left">${escapeHtml(state.meta.commentImprove||"")}</td></tr><tr><th style="text-align:left">次の試合で意識すること</th><td style="text-align:left">${escapeHtml(state.meta.commentNext||"")}</td></tr></table><div class="note">※中央の「ゲーム」欄にはゲームカウントではなく、そのゲームの最終ポイント（例：4－2、6－4、8－6）を表示しています。</div>
+  <div class="note">※ファイナルゲームは、実際のサーブ順に合わせて2ポイントごとに青（S）・赤（R）が切り替わります。</div>
   </body></html>`;
 }
 
