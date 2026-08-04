@@ -148,6 +148,8 @@
       border-radius:14px;
       padding:12px 10px;
       font-weight:800;
+      line-height:1.25;
+      min-height:48px;
       cursor:pointer;
       touch-action:manipulation;
       transition:transform .12s ease, box-shadow .12s ease, filter .12s ease, background .12s ease;
@@ -552,13 +554,13 @@
       <button class="btn" data-group="finish" data-value="twist_winner">ツイストポイント</button>
       <button class="btn" data-group="finish" data-value="double_fault_finish">ダブルフォルト</button>
       <button class="btn" data-group="finish" data-value="volley_winner">ボレーポイント</button>
-      <button class="btn" data-group="finish" data-value="poach_volley_winner">ポーチボレーポイント</button>
-      <button class="btn" data-group="finish" data-value="stroke_net">ストロークミス（ネット）</button>
-      <button class="btn" data-group="finish" data-value="stroke_out">ストロークミス（アウト）</button>
-      <button class="btn" data-group="finish" data-value="volley_net">ボレーミス（ネット）</button>
-      <button class="btn" data-group="finish" data-value="volley_out">ボレーミス（アウト）</button>
-      <button class="btn" data-group="finish" data-value="receive_net">レシーブミス（ネット）</button>
-      <button class="btn" data-group="finish" data-value="receive_out">レシーブミス（アウト）</button>
+      <button class="btn" data-group="finish" data-value="poach_volley_winner">ポーチボレー<br>ポイント</button>
+      <button class="btn" data-group="finish" data-value="stroke_net">ストロークミス<br>（ネット）</button>
+      <button class="btn" data-group="finish" data-value="stroke_out">ストロークミス<br>（アウト）</button>
+      <button class="btn" data-group="finish" data-value="volley_net">ボレーミス<br>（ネット）</button>
+      <button class="btn" data-group="finish" data-value="volley_out">ボレーミス<br>（アウト）</button>
+      <button class="btn" data-group="finish" data-value="receive_net">レシーブミス<br>（ネット）</button>
+      <button class="btn" data-group="finish" data-value="receive_out">レシーブミス<br>（アウト）</button>
     </div>
     <div class="small" style="margin-top:7px">レシーブミスを選ぶと、得点ペアをサーバー側、⑥を現在のレシーバーへ自動設定します。</div>
     <div class="button-grid">
@@ -821,8 +823,8 @@
 
 <script>
 document.getElementById("jsWarning").style.display="none";
-const STORAGE_KEY="softtennis_stats_v42";
-const OLD_KEY="softtennis_stats_v41";
+const STORAGE_KEY="softtennis_stats_v43";
+const OLD_KEY="softtennis_stats_v42";
 
 const finishLabels={
   stroke_winner:"ストロークポイント",serve_winner:"サーブポイント",receive_winner:"レシーブポイント",twist_winner:"ツイストポイント",double_fault_finish:"ダブルフォルト",volley_winner:"ボレーポイント",poach_volley_winner:"ポーチボレーポイント",
