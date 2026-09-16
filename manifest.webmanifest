@@ -1,0 +1,11 @@
+{
+  "name": "ソフトテニス試合分析",
+  "short_name": "テニス分析",
+  "description": "ソフトテニスの試合記録・分析アプリ",
+  "lang": "ja",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#eaf7fb",
+  "theme_color": "#111827"
+}

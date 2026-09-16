@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#111827" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="テニス分析" />
+  <link rel="manifest" href="./manifest.webmanifest" />
   <title>ソフトテニス試合分析</title>
   <style>
     :root {
@@ -92,6 +96,20 @@
       font-size:.8rem;
       color:#d5edf8;
     }
+    .offline-status{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      margin-top:7px;
+      padding:4px 9px;
+      border-radius:999px;
+      font-size:.72rem;
+      font-weight:800;
+      background:rgba(255,255,255,.14);
+      color:#e9f8ff;
+    }
+    .offline-status::before{content:"";width:8px;height:8px;border-radius:50%;background:#86efac}
+    .offline-status.is-offline::before{background:#fde047}
     main{
       position:relative;
       z-index:1;
@@ -381,6 +399,7 @@
 <header>
   <h1>ソフトテニス試合分析</h1>
   <p>ダブルス4選手すべてを個別分析</p>
+  <div id="offlineStatus" class="offline-status" role="status" aria-live="polite">オフライン利用準備中</div>
 </header>
 
 <main>
@@ -2107,6 +2126,31 @@ document.getElementById("scoreSheetBtn").onclick=()=>{
 };
 
 load();writeMeta();rebuildScore();render();renderSavedMatches();bindAggregateControls();renderAggregateMatchList();
+
+const offlineStatus=document.getElementById("offlineStatus");
+let offlineReady=!!navigator.serviceWorker?.controller;
+function updateConnectionStatus(){
+  const offline=!navigator.onLine;
+  offlineStatus.textContent=offline
+    ?(offlineReady?"オフラインで動作中":"オフライン準備未完了")
+    :(offlineReady?"オフライン利用可能":"オフライン利用準備中");
+  offlineStatus.classList.toggle("is-offline",offline);
+}
+window.addEventListener("online",updateConnectionStatus);
+window.addEventListener("offline",updateConnectionStatus);
+updateConnectionStatus();
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("./sw.js").then(()=>navigator.serviceWorker.ready).then(()=>{
+      offlineReady=true;
+      updateConnectionStatus();
+    }).catch(()=>{
+      offlineStatus.textContent="オフライン準備に失敗";
+      offlineStatus.classList.add("is-offline");
+    });
+  });
+}
 </script>
 </body>
 </html>
